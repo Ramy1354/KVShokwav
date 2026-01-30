@@ -108,4 +108,4 @@ Join our Discord server for support and updates!
 
 ---
 
-Made with ❤️ by KV Team
+Made with ❤️ by KVA (14 years old)
