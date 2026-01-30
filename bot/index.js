@@ -83,7 +83,7 @@ const loadCommands = async () => {
     );
 
     for (const file of commandFiles) {
-      const command = await import(`./commands/${folder}/${file}?t=${Date.now()}`);
+      const command = await import(`./commands/${folder}/${file}`);
       client.commands.set(command.default.data.name, command.default);
       commands.push(command.default.data.toJSON());
     }
@@ -93,23 +93,12 @@ const loadCommands = async () => {
 
   try {
     console.log('Started refreshing application (/) commands.');
-    console.log(`Registering ${commands.length} commands...`);
-    console.log('Timestamp:', new Date().toISOString());
 
-    // Delete all existing commands first to force refresh
-    const existingCommands = await rest.get(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID));
-    console.log(`Found ${existingCommands.length} existing commands, deleting...`);
-    
-    for (const cmd of existingCommands) {
-      await rest.delete(Routes.applicationCommand(process.env.DISCORD_CLIENT_ID, cmd.id));
-    }
-
-    // Register new commands with fresh permissions
     await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
       body: commands,
     });
 
-    console.log('Successfully reloaded application (/) commands with updated permissions.');
+    console.log('Successfully reloaded application (/) commands.');
   } catch (error) {
     console.error(error);
   }
