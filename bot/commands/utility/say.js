@@ -23,9 +23,17 @@ export default {
       const message = interaction.options.getString('message');
       const targetChannel = interaction.options.getChannel('channel') || interaction.channel;
 
+      // Check if channel exists
+      if (!targetChannel) {
+        return await interaction.reply({
+          content: '❌ Channel not found! Please specify a channel or use the command in a text channel.',
+          ephemeral: true
+        });
+      }
+
       // Check if bot has permission to send messages in target channel
       const botPermissions = targetChannel.permissionsFor(interaction.guild.members.me);
-      if (!botPermissions.has(PermissionFlagsBits.SendMessages)) {
+      if (!botPermissions || !botPermissions.has(PermissionFlagsBits.SendMessages)) {
         return await interaction.reply({
           content: '❌ I don\'t have permission to send messages in that channel!',
           ephemeral: true

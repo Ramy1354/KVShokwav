@@ -53,8 +53,10 @@ export default {
           '`/help` - Show help menu (currently unavailiable)',
           '`/commands` - Show this command list',
           '`/test` - Test bot functionality',
-          '`/addrole <user> <role>` - Assign roles to users',
-          '`/removerole <user> <role>` - Remove roles from users'
+          '`/addrole` <user> <role>` - Assign roles to users',
+          '`/removerole` <user> <role>` - Remove roles from users',
+          '`/nuke` <channel> - removes all messages and recreates the channel again.',
+          '`/clear` <amount> <user> (optional) <reason> (optional) - removes the amount of messages'
         ]
       },
       moderation: {
@@ -63,7 +65,10 @@ export default {
           '`/mute <user> <duration> [reason]` - Timeout users',
           '`/unmute <user> [reason]` - Remove user timeout',
           '`/warn <user> <reason>` - Warn users',
-          '`/warnings <user>` - View user warnings'
+          '`/warnings <user>` - View user warnings',
+          '`/ban` <user> <reason> - Bans user from the server',
+          '`/unban` <userID> (it works if you have developer mode in you discord account active or provide account*s settings.) <reason> - Unbans the user',
+          '`/kick` <user> <reason> - kicks user out of the server'
         ]
       },
       fun: {
@@ -73,7 +78,8 @@ export default {
           '`/coinflip` - Flip a coin',
           '`/roll [sides] [count]` - Roll dice',
           '`/joke` - Get random jokes',
-          '`/meme` - Get random memes'
+          '`/meme` - Get random memes',
+          '`/say` - making the user*s message appear from shok.wav instead of the user'
         ]
       },
       economy: {
@@ -105,7 +111,7 @@ export default {
       ai: {
         title: '🤖 AI & Image Commands',
         commands: [
-          '`/caption <image> [style]` - Generate funny captions',
+          '`/caption` <text> [source link or source attachment or bottom or black] - Generate captions made by you',
           '`/describe <image> [detail]` - AI image description',
           '`/analyze <image> [focus]` - Deep image analysis',
           '`/enhance <image> [scale]` - AI image upscaling',
