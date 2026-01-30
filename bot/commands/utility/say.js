@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChannelType } from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -10,18 +10,29 @@ export default {
         .setDescription('The message you want the bot to say')
         .setRequired(true)
         .setMaxLength(2000)
+    )
+    .addChannelOption(option =>
+      option
+        .setName('channel')
+        .setDescription('Channel to send message to')
+        .setRequired(false)
+        .addChannelTypes(ChannelType.GuildText)
     ),
 
   async execute(interaction) {
     try {
-      await interaction.deferReply({ ephemeral: true });
-
       const message = interaction.options.getString('message');
-      const channel = interaction.channel;
+      let channel = interaction.options.getChannel('channel');
+
+      // If no channel specified, use the channel where command was used
+      if (!channel) {
+        channel = interaction.channel;
+      }
 
       if (!channel) {
-        return await interaction.editReply({
-          content: '❌ Could not find channel!'
+        return await interaction.reply({
+          content: '❌ Could not find a valid channel!',
+          ephemeral: true
         });
       }
 
@@ -33,20 +44,18 @@ export default {
       // Send message
       await channel.send(filteredMessage);
 
-      await interaction.editReply({
-        content: '✅ Message sent!'
+      await interaction.reply({
+        content: '✅ Message sent!',
+        ephemeral: true
       });
 
     } catch (error) {
       console.error('Say command error:', error);
       
-      try {
-        await interaction.editReply({
-          content: '❌ Failed to send the message.'
-        });
-      } catch (e) {
-        console.error('Failed to send error reply:', e);
-      }
+      await interaction.reply({
+        content: '❌ Failed to send the message.',
+        ephemeral: true
+      });
     }
   },
 };
