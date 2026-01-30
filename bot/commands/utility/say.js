@@ -16,24 +16,12 @@ export default {
         .setName('channel')
         .setDescription('Channel to send the message to (optional)')
         .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+    ),
 
   async execute(interaction) {
     try {
       const message = interaction.options.getString('message');
       const targetChannel = interaction.options.getChannel('channel') || interaction.channel;
-
-      // Check if user has permission to send messages in the target channel
-      if (targetChannel.id !== interaction.channel.id) {
-        const permissions = targetChannel.permissionsFor(interaction.member);
-        if (!permissions.has(PermissionFlagsBits.SendMessages)) {
-          return await interaction.reply({
-            content: '❌ You don\'t have permission to send messages in that channel!',
-            ephemeral: true
-          });
-        }
-      }
 
       // Check if bot has permission to send messages in target channel
       const botPermissions = targetChannel.permissionsFor(interaction.guild.members.me);
