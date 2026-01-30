@@ -93,7 +93,14 @@ const loadCommands = async () => {
 
   try {
     console.log('Started refreshing application (/) commands.');
+    console.log(`Registering ${commands.length} commands...`);
 
+    // Clear old commands first
+    await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
+      body: [],
+    });
+
+    // Register new commands
     await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
       body: commands,
     });
