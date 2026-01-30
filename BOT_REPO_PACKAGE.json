@@ -1,0 +1,30 @@
+{
+  "name": "kvshokwav-bot",
+  "version": "1.0.0",
+  "description": "A feature-rich Discord bot with economy, tickets, moderation, and AI features",
+  "private": false,
+  "type": "module",
+  "main": "bot/index.js",
+  "scripts": {
+    "start": "node bot/index.js",
+    "dev": "node bot/index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "economy",
+    "tickets",
+    "moderation",
+    "ai"
+  ],
+  "author": "KV | Shok.wav",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

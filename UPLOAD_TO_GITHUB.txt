@@ -1,0 +1,53 @@
+========================================
+FILES TO UPDATE ON GITHUB
+========================================
+
+Go to: https://github.com/Ramy1354/KVShokwav-Website
+
+Then follow these steps for each file:
+
+========================================
+FILE 1: src/contexts/AuthContext.jsx
+========================================
+
+1. Navigate to: src/contexts/AuthContext.jsx
+2. Click the pencil icon (Edit)
+3. Delete everything and paste the content from: project/src/contexts/AuthContext.jsx (the file in your Kiro workspace)
+4. Scroll down and click "Commit changes"
+
+========================================
+FILE 2: netlify/functions/auth-callback.js
+========================================
+
+This file already exists in your project at: project/netlify/functions/auth-callback.js
+
+1. On GitHub, navigate to: netlify/functions/
+2. Click "Add file" > "Create new file"
+3. Name it: auth-callback.js
+4. Paste the content from: project/netlify/functions/auth-callback.js
+5. Click "Commit changes"
+
+========================================
+FILE 3: DISCORD_OAUTH_SETUP.md (Optional - just documentation)
+========================================
+
+1. On GitHub, click "Add file" > "Create new file"
+2. Name it: DISCORD_OAUTH_SETUP.md
+3. Paste the content from: project/DISCORD_OAUTH_SETUP.md
+4. Click "Commit changes"
+
+========================================
+NEXT STEPS AFTER UPLOADING:
+========================================
+
+1. Add redirect URI in Discord Developer Portal:
+   - Go to: https://discord.com/developers/applications
+   - Select your bot
+   - OAuth2 > Add Redirect: https://kvshokwav.netlify.app/auth/callback
+   - Save
+
+2. Netlify will auto-deploy after you commit to GitHub
+
+3. Test at: https://kvshokwav.netlify.app
+
+========================================
