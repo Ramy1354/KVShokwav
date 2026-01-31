@@ -85,6 +85,11 @@ const loadCommands = async () => {
   console.log(`\n📤 Registering ${commands.length} commands...`);
   console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
 
+  if (client.guilds.cache.size === 0) {
+    console.warn('⚠️ WARNING: Bot is not in any guilds yet!');
+    return;
+  }
+
   const rest = new REST({ version: '10' }).setToken(token);
 
   // Register commands to all guilds
@@ -117,6 +122,9 @@ client.once('clientReady', async () => {
   } catch (error) {
     console.error('❌ Failed to set status:', error.message);
   }
+  
+  // Wait a bit for guilds to fully load
+  await new Promise(resolve => setTimeout(resolve, 2000));
   
   await loadCommands();
   console.log('✅ All commands loaded!\n');
