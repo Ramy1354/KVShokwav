@@ -127,7 +127,6 @@ const loadCommands = async () => {
     console.error('⚠️ Could not register commands to guild');
     console.error('Error message:', error.message);
     console.error('Error status:', error.status);
-    console.error('Error code:', error.code);
   });
 };
 
