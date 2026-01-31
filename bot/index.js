@@ -83,17 +83,6 @@ const loadCommands = async () => {
   }
 
   console.log(`\n📤 Registering ${commands.length} commands...`);
-
-  const rest = new REST({ version: '10' }).setToken(token);
-  const guilds = Array.from(client.guilds.cache.values());
-
-  console.log(`📊 Bot is in ${guilds.length} guild(s)\n`);
-
-  // Register commands in background (don't wait)
-  (async () => {
-    for (const guild of guilds) {
-      try {
-            console.log(`\n📤 Registering ${commands.length} commands...`);
   console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
 
   const rest = new REST({ version: '10' }).setToken(token);
@@ -113,7 +102,6 @@ const loadCommands = async () => {
       console.error(`Code: ${err.code}`);
     }
   }
-  })();
 };
 
 client.once('clientReady', async () => {
@@ -475,6 +463,7 @@ client.on('messageCreate', async message => {
 });
 
 client.login(token);
+
 client.on('guildCreate', async guild => {
   console.log(`\n✅ Bot joined guild: ${guild.name}`);
   
