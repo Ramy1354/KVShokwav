@@ -114,36 +114,24 @@ const loadCommands = async () => {
     }
   }
 
-  console.log(`\n📤 Registering ${commands.length} regular + ${adminCommands.length} admin commands...`);
+  console.log(`\n📤 Registering ${commands.length + adminCommands.length} total commands...`);
 
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-  // Register regular commands globally (visible to everyone)
-  if (commands.length > 0) {
-    console.log('📍 Registering regular commands globally...');
-    rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
-      body: commands,
-    }).then(result => {
-      console.log(`✅ Successfully registered ${result.length} regular commands globally!`);
-    }).catch(error => {
-      console.error('⚠️ Global registration failed for regular commands');
-      console.error('Error:', error.message);
-    });
-  }
+  // Combine all commands
+  const allCommands = [...commands, ...adminCommands];
 
-  // Register admin commands to each guild only
-  if (adminCommands.length > 0) {
-    client.guilds.cache.forEach(guild => {
-      console.log(`📍 Registering ${adminCommands.length} admin commands to guild: ${guild.name}`);
-      rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
-        body: adminCommands,
-      }).then(result => {
-        console.log(`✅ Registered ${result.length} admin commands to ${guild.name}`);
-      }).catch(err => {
-        console.error(`❌ Failed to register admin commands to ${guild.name}:`, err.message);
-      });
+  // Register to all guilds the bot is in
+  client.guilds.cache.forEach(guild => {
+    console.log(`📍 Registering ${allCommands.length} commands to guild: ${guild.name}`);
+    rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
+      body: allCommands,
+    }).then(result => {
+      console.log(`✅ Registered ${result.length} commands to ${guild.name}`);
+    }).catch(err => {
+      console.error(`❌ Failed to register to ${guild.name}:`, err.message);
     });
-  }
+  });
 };
 
 client.once('clientReady', async () => {
@@ -160,12 +148,12 @@ client.once('clientReady', async () => {
   try {
     await client.user.setPresence({
       activities: [{
-        name: 'Active 24/7, set by KVA, Hosted: Railway.com',
+        name: 'Well Developed by KVA',
         type: 0 // PLAYING
       }],
       status: 'online'
     });
-    console.log('✅ Bot status set to: Active 24/7, set by KVA, Hosted: Railway.com');
+    console.log('✅ Bot status set to: Well Developed by KVA');
   } catch (error) {
     console.error('❌ Failed to set bot status:', error);
   }
