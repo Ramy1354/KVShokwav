@@ -6,40 +6,11 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-<<<<<<< HEAD
-// Only load .env if we're not in production (Railway sets env vars directly)
-=======
 // Load environment variables
->>>>>>> 938fb99f5e86b155c70223d3379ea398b363b4ea
 if (process.env.NODE_ENV !== 'production') {
   const envPaths = [
     join(process.cwd(), '.env'),
     join(__dirname, '..', '.env'),
-<<<<<<< HEAD
-    join(dirname(__dirname), '.env')
-  ];
-
-  let envLoaded = false;
-  for (const envPath of envPaths) {
-    try {
-      console.log(`Trying to load: ${envPath}`);
-      const result = dotenv.config({ path: envPath });
-      if (!result.error) {
-        console.log(`Environment loaded from: ${envPath}`);
-        envLoaded = true;
-        break;
-      }
-    } catch (error) {
-      console.log(`Error loading ${envPath}:`, error.message);
-    }
-  }
-
-  if (!envLoaded) {
-    console.log('Warning: Could not load .env file from any location');
-  }
-} else {
-  console.log('Production mode detected - using Railway environment variables');
-=======
   ];
 
   for (const envPath of envPaths) {
@@ -52,7 +23,6 @@ if (process.env.NODE_ENV !== 'production') {
   }
 } else {
   console.log('Production mode - using Railway environment variables');
->>>>>>> 938fb99f5e86b155c70223d3379ea398b363b4ea
 }
 
 import { Client, GatewayIntentBits, Collection, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
@@ -89,11 +59,7 @@ const loadCommands = async () => {
   const commands = [];
   const commandFolders = readdirSync(join(__dirname, 'commands'));
 
-<<<<<<< HEAD
-  console.log(`📂 Found ${commandFolders.length} command folders`);
-=======
   console.log(`\n📂 Found ${commandFolders.length} command folders`);
->>>>>>> 938fb99f5e86b155c70223d3379ea398b363b4ea
 
   for (const folder of commandFolders) {
     const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(
@@ -108,13 +74,7 @@ const loadCommands = async () => {
         if (command.default && command.default.data) {
           client.commands.set(command.default.data.name, command.default);
           commands.push(command.default.data.toJSON());
-<<<<<<< HEAD
-          console.log(`    ✅ Loaded: ${command.default.data.name}`);
-        } else {
-          console.warn(`    ⚠️ Invalid command structure: ${file}`);
-=======
           console.log(`    ✅ ${command.default.data.name}`);
->>>>>>> 938fb99f5e86b155c70223d3379ea398b363b4ea
         }
       } catch (error) {
         console.error(`    ❌ Error loading ${file}:`, error.message);
@@ -122,63 +82,6 @@ const loadCommands = async () => {
     }
   }
 
-<<<<<<< HEAD
-  console.log(`\n📤 Registering ${commands.length} commands with Discord...`);
-
-  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
-  // Get the first guild the bot is in
-  const guild = client.guilds.cache.first();
-  if (!guild) {
-    console.error('❌ Bot is not in any guilds! Cannot register commands.');
-    return;
-  }
-
-  console.log(`📍 Clearing old commands from guild: ${guild.name}`);
-  
-  // Clear old commands first
-  rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
-    body: [],
-  }).then(() => {
-    console.log('✅ Cleared old commands');
-    
-    // Now register new commands
-    console.log(`📍 Registering ${commands.length} new commands to guild: ${guild.name}`);
-    return rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
-      body: commands,
-    });
-  }).then(result => {
-    console.log(`✅ Successfully registered ${result.length} commands to ${guild.name}`);
-  }).catch(error => {
-    console.error('⚠️ Could not register commands to guild');
-    console.error('Error message:', error.message);
-    console.error('Error status:', error.status);
-  });
-};
-
-client.once('clientReady', async () => {
-  console.log(`✅ Logged in as ${client.user.tag}!`);
-  console.log(`🤖 Bot is now online and ready!`);
-  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
-  
-  // Log guild IDs
-  client.guilds.cache.forEach(guild => {
-    console.log(`  - ${guild.name} (ID: ${guild.id})`);
-  });
-  
-  // Set custom status
-  try {
-    await client.user.setPresence({
-      activities: [{
-        name: 'Well Developed by KVA',
-        type: 0 // PLAYING
-      }],
-      status: 'online'
-    });
-    console.log('✅ Bot status set to: Well Developed by KVA');
-  } catch (error) {
-    console.error('❌ Failed to set bot status:', error);
-=======
   console.log(`\n📤 Registering ${commands.length} commands...`);
 
   const rest = new REST({ version: '10' }).setToken(token);
@@ -186,17 +89,20 @@ client.once('clientReady', async () => {
 
   console.log(`📊 Bot is in ${guilds.length} guild(s)\n`);
 
-  for (const guild of guilds) {
-    try {
-      console.log(`📍 Registering to: ${guild.name}`);
-      const result = await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
-        body: commands,
-      });
-      console.log(`✅ Registered ${result.length} commands\n`);
-    } catch (err) {
-      console.error(`❌ Failed: ${err.message}\n`);
+  // Register commands in background (don't wait)
+  (async () => {
+    for (const guild of guilds) {
+      try {
+        console.log(`📍 Registering to: ${guild.name}`);
+        const result = await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
+          body: commands,
+        });
+        console.log(`✅ Registered ${result.length} commands\n`);
+      } catch (err) {
+        console.error(`❌ Failed: ${err.message}\n`);
+      }
     }
-  }
+  })();
 };
 
 client.once('clientReady', async () => {
@@ -211,16 +117,10 @@ client.once('clientReady', async () => {
     console.log('✅ Status updated\n');
   } catch (error) {
     console.error('❌ Failed to set status:', error.message);
->>>>>>> 938fb99f5e86b155c70223d3379ea398b363b4ea
   }
   
-  console.log('📝 Loading commands...');
   await loadCommands();
-<<<<<<< HEAD
-  console.log('✅ Commands loaded successfully!');
-=======
   console.log('✅ All commands loaded!\n');
->>>>>>> 938fb99f5e86b155c70223d3379ea398b363b4ea
 });
 
 client.on('interactionCreate', async interaction => {
