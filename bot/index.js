@@ -121,17 +121,20 @@ const loadCommands = async () => {
   // Combine all commands
   const allCommands = [...commands, ...adminCommands];
 
+  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
+
   // Register to all guilds the bot is in
-  client.guilds.cache.forEach(guild => {
-    console.log(`📍 Registering ${allCommands.length} commands to guild: ${guild.name}`);
-    rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
-      body: allCommands,
-    }).then(result => {
+  for (const [guildId, guild] of client.guilds.cache) {
+    try {
+      console.log(`📍 Registering ${allCommands.length} commands to: ${guild.name}`);
+      const result = await rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId), {
+        body: allCommands,
+      });
       console.log(`✅ Registered ${result.length} commands to ${guild.name}`);
-    }).catch(err => {
+    } catch (err) {
       console.error(`❌ Failed to register to ${guild.name}:`, err.message);
-    });
-  });
+    }
+  }
 };
 
 client.once('clientReady', async () => {
