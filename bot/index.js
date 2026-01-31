@@ -93,15 +93,26 @@ const loadCommands = async () => {
   (async () => {
     for (const guild of guilds) {
       try {
-        console.log(`📍 Registering to: ${guild.name}`);
-        const result = await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
-          body: commands,
-        });
-        console.log(`✅ Registered ${result.length} commands\n`);
-      } catch (err) {
-        console.error(`❌ Failed: ${err.message}\n`);
-      }
+            console.log(`\n📤 Registering ${commands.length} commands...`);
+  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
+
+  const rest = new REST({ version: '10' }).setToken(token);
+
+  // Register commands to all guilds
+  for (const guild of client.guilds.cache.values()) {
+    try {
+      console.log(`📍 Registering to ${guild.name}...`);
+      const result = await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
+        body: commands,
+      });
+      console.log(`✅ SUCCESS: Registered ${result.length} commands to ${guild.name}`);
+    } catch (err) {
+      console.error(`❌ FAILED to register to ${guild.name}`);
+      console.error(`Error: ${err.message}`);
+      console.error(`Status: ${err.status}`);
+      console.error(`Code: ${err.code}`);
     }
+  }
   })();
 };
 
