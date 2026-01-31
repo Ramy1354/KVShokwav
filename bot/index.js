@@ -83,21 +83,21 @@ const loadCommands = async () => {
   }
 
   console.log(`\n📤 Registering ${commands.length} commands...`);
+  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
 
   const rest = new REST({ version: '10' }).setToken(token);
 
-  // Use global command registration
-  try {
-    console.log('📍 Registering commands globally...');
-    const result = await rest.put(Routes.applicationCommands(clientId), {
-      body: commands,
-    });
-    console.log(`✅ SUCCESS: Registered ${result.length} commands globally`);
-  } catch (err) {
-    console.error(`❌ FAILED to register commands globally`);
-    console.error(`Error: ${err.message}`);
-    console.error(`Status: ${err.status}`);
-    console.error(`Code: ${err.code}`);
+  // Register to each guild individually
+  for (const guild of client.guilds.cache.values()) {
+    try {
+      console.log(`📍 Registering to ${guild.name}...`);
+      const result = await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
+        body: commands,
+      });
+      console.log(`✅ Registered ${result.length} commands to ${guild.name}`);
+    } catch (err) {
+      console.error(`❌ Failed to register to ${guild.name}: ${err.message}`);
+    }
   }
 };
 
@@ -471,11 +471,11 @@ client.on('guildCreate', async guild => {
   const rest = new REST({ version: '10' }).setToken(token);
   
   try {
-    await rest.put(Routes.applicationCommands(clientId), {
+    await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
       body: commands,
     });
-    console.log(`✅ Registered ${commands.length} commands globally`);
+    console.log(`✅ Registered ${commands.length} commands to ${guild.name}`);
   } catch (err) {
-    console.error(`❌ Failed to register commands:`, err.message);
+    console.error(`❌ Failed to register commands to ${guild.name}: ${err.message}`);
   }
 });
