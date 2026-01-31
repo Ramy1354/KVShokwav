@@ -78,6 +78,7 @@ client.commands = new Collection();
 
 const loadCommands = async () => {
   const commands = [];
+  const adminCommands = [];
   const commandFolders = readdirSync(join(__dirname, 'commands'));
 
   console.log(`📂 Found ${commandFolders.length} command folders`);
@@ -94,8 +95,16 @@ const loadCommands = async () => {
         const command = await import(`./commands/${folder}/${file}`);
         if (command.default && command.default.data) {
           client.commands.set(command.default.data.name, command.default);
-          commands.push(command.default.data.toJSON());
-          console.log(`    ✅ Loaded: ${command.default.data.name}`);
+          const cmdJson = command.default.data.toJSON();
+          
+          // Check if command has admin permissions
+          if (cmdJson.default_member_permissions) {
+            adminCommands.push(cmdJson);
+            console.log(`    ✅ Loaded (ADMIN): ${command.default.data.name}`);
+          } else {
+            commands.push(cmdJson);
+            console.log(`    ✅ Loaded: ${command.default.data.name}`);
+          }
         } else {
           console.warn(`    ⚠️ Invalid command structure: ${file}`);
         }
@@ -105,32 +114,36 @@ const loadCommands = async () => {
     }
   }
 
-  console.log(`\n📤 Registering ${commands.length} commands with Discord...`);
+  console.log(`\n📤 Registering ${commands.length} regular + ${adminCommands.length} admin commands...`);
 
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-  // Try global registration first (works in all servers and DMs)
-  console.log('📍 Attempting global registration...');
-  rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
-    body: commands,
-  }).then(result => {
-    console.log(`✅ Successfully registered ${result.length} commands globally!`);
-  }).catch(error => {
-    console.error('⚠️ Global registration failed, falling back to guild registration');
-    console.error('Error:', error.message);
-    
-    // Fallback: register to all guilds
+  // Register regular commands globally (visible to everyone)
+  if (commands.length > 0) {
+    console.log('📍 Registering regular commands globally...');
+    rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
+      body: commands,
+    }).then(result => {
+      console.log(`✅ Successfully registered ${result.length} regular commands globally!`);
+    }).catch(error => {
+      console.error('⚠️ Global registration failed for regular commands');
+      console.error('Error:', error.message);
+    });
+  }
+
+  // Register admin commands to each guild only
+  if (adminCommands.length > 0) {
     client.guilds.cache.forEach(guild => {
-      console.log(`📍 Registering to guild: ${guild.name}`);
+      console.log(`📍 Registering ${adminCommands.length} admin commands to guild: ${guild.name}`);
       rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
-        body: commands,
+        body: adminCommands,
       }).then(result => {
-        console.log(`✅ Registered ${result.length} commands to ${guild.name}`);
+        console.log(`✅ Registered ${result.length} admin commands to ${guild.name}`);
       }).catch(err => {
-        console.error(`❌ Failed to register to ${guild.name}:`, err.message);
+        console.error(`❌ Failed to register admin commands to ${guild.name}:`, err.message);
       });
     });
-  });
+  }
 };
 
 client.once('clientReady', async () => {
@@ -147,12 +160,12 @@ client.once('clientReady', async () => {
   try {
     await client.user.setPresence({
       activities: [{
-        name: 'Well Developed by KVA',
+        name: 'Active 24/7, set by KVA, Hosted: Railway.com',
         type: 0 // PLAYING
       }],
       status: 'online'
     });
-    console.log('✅ Bot status set to: Well Developed by KVA');
+    console.log('✅ Bot status set to: Active 24/7, set by KVA, Hosted: Railway.com');
   } catch (error) {
     console.error('❌ Failed to set bot status:', error);
   }
