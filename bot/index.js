@@ -109,20 +109,44 @@ const loadCommands = async () => {
 
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-  // Don't await - just fire it off in the background
-  rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
-    body: commands,
+  // Get the first guild the bot is in
+  const guild = client.guilds.cache.first();
+  if (!guild) {
+    console.error('❌ Bot is not in any guilds! Cannot register commands.');
+    return;
+  }
+
+  console.log(`📍 Clearing old commands from guild: ${guild.name}`);
+  
+  // Clear old commands first
+  rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
+    body: [],
+  }).then(() => {
+    console.log('✅ Cleared old commands');
+    
+    // Now register new commands
+    console.log(`📍 Registering ${commands.length} new commands to guild: ${guild.name}`);
+    return rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
+      body: commands,
+    });
   }).then(result => {
-    console.log(`✅ Successfully registered ${result.length} application (/) commands.`);
+    console.log(`✅ Successfully registered ${result.length} commands to ${guild.name}`);
   }).catch(error => {
-    console.error('⚠️ Could not register commands globally');
-    console.error('Error:', error.message);
+    console.error('⚠️ Could not register commands to guild');
+    console.error('Error message:', error.message);
+    console.error('Error status:', error.status);
   });
 };
 
 client.once('clientReady', async () => {
   console.log(`✅ Logged in as ${client.user.tag}!`);
   console.log(`🤖 Bot is now online and ready!`);
+  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
+  
+  // Log guild IDs
+  client.guilds.cache.forEach(guild => {
+    console.log(`  - ${guild.name} (ID: ${guild.id})`);
+  });
   
   // Set custom status
   try {
