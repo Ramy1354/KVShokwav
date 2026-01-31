@@ -6,31 +6,34 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables first - try multiple paths
-const envPaths = [
-  join(process.cwd(), '.env'),
-  join(__dirname, '..', '.env'),
-  join(dirname(__dirname), '.env')
-];
+// Only load .env if we're not in production (Railway sets env vars directly)
+if (process.env.NODE_ENV !== 'production') {
+  const envPaths = [
+    join(process.cwd(), '.env'),
+    join(__dirname, '..', '.env'),
+    join(dirname(__dirname), '.env')
+  ];
 
-let envLoaded = false;
-for (const envPath of envPaths) {
-  try {
-    console.log(`Trying to load: ${envPath}`);
-    const result = dotenv.config({ path: envPath });
-    console.log('Dotenv result:', result);
-    if (!result.error) {
-      console.log(`Environment loaded from: ${envPath}`);
-      envLoaded = true;
-      break;
+  let envLoaded = false;
+  for (const envPath of envPaths) {
+    try {
+      console.log(`Trying to load: ${envPath}`);
+      const result = dotenv.config({ path: envPath });
+      if (!result.error) {
+        console.log(`Environment loaded from: ${envPath}`);
+        envLoaded = true;
+        break;
+      }
+    } catch (error) {
+      console.log(`Error loading ${envPath}:`, error.message);
     }
-  } catch (error) {
-    console.log(`Error loading ${envPath}:`, error.message);
   }
-}
 
-if (!envLoaded) {
-  console.log('Warning: Could not load .env file from any location');
+  if (!envLoaded) {
+    console.log('Warning: Could not load .env file from any location');
+  }
+} else {
+  console.log('Production mode detected - using Railway environment variables');
 }
 
 import { Client, GatewayIntentBits, Collection, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
@@ -77,48 +80,67 @@ const loadCommands = async () => {
   const commands = [];
   const commandFolders = readdirSync(join(__dirname, 'commands'));
 
+  console.log(`📂 Found ${commandFolders.length} command folders`);
+
   for (const folder of commandFolders) {
     const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(
       file => file.endsWith('.js')
     );
 
+    console.log(`  📁 ${folder}: ${commandFiles.length} commands`);
+
     for (const file of commandFiles) {
-      const command = await import(`./commands/${folder}/${file}`);
-      client.commands.set(command.default.data.name, command.default);
-      commands.push(command.default.data.toJSON());
+      try {
+        const command = await import(`./commands/${folder}/${file}`);
+        if (command.default && command.default.data) {
+          client.commands.set(command.default.data.name, command.default);
+          commands.push(command.default.data.toJSON());
+          console.log(`    ✅ Loaded: ${command.default.data.name}`);
+        } else {
+          console.warn(`    ⚠️ Invalid command structure: ${file}`);
+        }
+      } catch (error) {
+        console.error(`    ❌ Error loading ${file}:`, error.message);
+      }
     }
   }
 
+  console.log(`\n📤 Registering ${commands.length} commands with Discord...`);
+
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-  try {
-    console.log('Started refreshing application (/) commands.');
-
-    await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
-      body: commands,
-    });
-
-    console.log('Successfully reloaded application (/) commands.');
-  } catch (error) {
-    console.error(error);
-  }
+  // Don't await - just fire it off in the background
+  rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
+    body: commands,
+  }).then(result => {
+    console.log(`✅ Successfully registered ${result.length} application (/) commands.`);
+  }).catch(error => {
+    console.error('⚠️ Could not register commands globally');
+    console.error('Error:', error.message);
+  });
 };
 
-client.once('ready', async () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+client.once('clientReady', async () => {
+  console.log(`✅ Logged in as ${client.user.tag}!`);
+  console.log(`🤖 Bot is now online and ready!`);
   
   // Set custom status
-  client.user.setPresence({
-    activities: [{
-      name: 'Well Developed by KVA',
-      type: 0 // PLAYING
-    }],
-    status: 'online'
-  });
+  try {
+    await client.user.setPresence({
+      activities: [{
+        name: 'Well Developed by KVA',
+        type: 0 // PLAYING
+      }],
+      status: 'online'
+    });
+    console.log('✅ Bot status set to: Well Developed by KVA');
+  } catch (error) {
+    console.error('❌ Failed to set bot status:', error);
+  }
   
-  console.log('Bot status set to: Well Developed by KVA');
-  
+  console.log('📝 Loading commands...');
   await loadCommands();
+  console.log('✅ Commands loaded successfully!');
 });
 
 client.on('interactionCreate', async interaction => {
