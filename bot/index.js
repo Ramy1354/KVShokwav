@@ -464,3 +464,18 @@ client.on('messageCreate', async message => {
 });
 
 client.login(token);
+client.on('guildCreate', async guild => {
+  console.log(`\n✅ Bot joined guild: ${guild.name}`);
+  
+  const commands = Array.from(client.commands.values()).map(cmd => cmd.data.toJSON());
+  const rest = new REST({ version: '10' }).setToken(token);
+  
+  try {
+    await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
+      body: commands,
+    });
+    console.log(`✅ Registered ${commands.length} commands to ${guild.name}`);
+  } catch (err) {
+    console.error(`❌ Failed to register commands:`, err.message);
+  }
+});
