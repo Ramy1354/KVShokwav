@@ -109,24 +109,27 @@ const loadCommands = async () => {
 
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-  // Get the first guild the bot is in
-  const guild = client.guilds.cache.first();
-  if (!guild) {
-    console.error('❌ Bot is not in any guilds! Cannot register commands.');
-    return;
-  }
-
-  console.log(`📍 Registering commands to guild: ${guild.name} (${guild.id})`);
-
-  // Register to guild instead of globally (much faster)
-  rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
+  // Try global registration first (works in all servers and DMs)
+  console.log('📍 Attempting global registration...');
+  rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
     body: commands,
   }).then(result => {
-    console.log(`✅ Successfully registered ${result.length} commands to ${guild.name}`);
+    console.log(`✅ Successfully registered ${result.length} commands globally!`);
   }).catch(error => {
-    console.error('⚠️ Could not register commands to guild');
-    console.error('Error message:', error.message);
-    console.error('Error status:', error.status);
+    console.error('⚠️ Global registration failed, falling back to guild registration');
+    console.error('Error:', error.message);
+    
+    // Fallback: register to all guilds
+    client.guilds.cache.forEach(guild => {
+      console.log(`📍 Registering to guild: ${guild.name}`);
+      rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guild.id), {
+        body: commands,
+      }).then(result => {
+        console.log(`✅ Registered ${result.length} commands to ${guild.name}`);
+      }).catch(err => {
+        console.error(`❌ Failed to register to ${guild.name}:`, err.message);
+      });
+    });
   });
 };
 
