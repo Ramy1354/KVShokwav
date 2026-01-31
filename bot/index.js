@@ -6,46 +6,41 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Only load .env if we're not in production (Railway sets env vars directly)
+// Load environment variables
 if (process.env.NODE_ENV !== 'production') {
   const envPaths = [
     join(process.cwd(), '.env'),
     join(__dirname, '..', '.env'),
-    join(dirname(__dirname), '.env')
   ];
 
-  let envLoaded = false;
   for (const envPath of envPaths) {
     try {
-      console.log(`Trying to load: ${envPath}`);
-      const result = dotenv.config({ path: envPath });
-      if (!result.error) {
-        console.log(`Environment loaded from: ${envPath}`);
-        envLoaded = true;
-        break;
-      }
+      dotenv.config({ path: envPath });
+      break;
     } catch (error) {
-      console.log(`Error loading ${envPath}:`, error.message);
+      // Continue to next path
     }
   }
-
-  if (!envLoaded) {
-    console.log('Warning: Could not load .env file from any location');
-  }
 } else {
-  console.log('Production mode detected - using Railway environment variables');
+  console.log('Production mode - using Railway environment variables');
 }
 
 import { Client, GatewayIntentBits, Collection, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
 import { createClient } from '@supabase/supabase-js';
 import { readdirSync } from 'fs';
 
-console.log('Current working directory:', process.cwd());
-console.log('Debug - Environment variables:');
-console.log('DISCORD_TOKEN:', process.env.DISCORD_TOKEN ? 'SET' : 'NOT SET');
-console.log('DISCORD_CLIENT_ID:', process.env.DISCORD_CLIENT_ID);
-console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL);
-console.log('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
+// Verify environment variables
+const token = process.env.DISCORD_TOKEN;
+const clientId = process.env.DISCORD_CLIENT_ID;
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!token || !clientId || !supabaseUrl || !supabaseKey) {
+  console.error('❌ Missing required environment variables');
+  process.exit(1);
+}
+
+console.log('✅ Environment variables loaded');
 
 const client = new Client({
   intents: [
@@ -57,31 +52,14 @@ const client = new Client({
   ],
 });
 
-console.log('Debug - Environment variables:');
-console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL);
-console.log('VITE_SUPABASE_ANON_KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
-
-// Initialize Supabase client
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials in environment variables');
-  process.exit(1);
-}
-
-console.log('Using Supabase URL:', supabaseUrl);
-
 export const supabase = createClient(supabaseUrl, supabaseKey);
-
 client.commands = new Collection();
 
 const loadCommands = async () => {
   const commands = [];
-  const adminCommands = [];
   const commandFolders = readdirSync(join(__dirname, 'commands'));
 
-  console.log(`📂 Found ${commandFolders.length} command folders`);
+  console.log(`\n📂 Found ${commandFolders.length} command folders`);
 
   for (const folder of commandFolders) {
     const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(
@@ -95,18 +73,8 @@ const loadCommands = async () => {
         const command = await import(`./commands/${folder}/${file}`);
         if (command.default && command.default.data) {
           client.commands.set(command.default.data.name, command.default);
-          const cmdJson = command.default.data.toJSON();
-          
-          // Check if command has admin permissions
-          if (cmdJson.default_member_permissions) {
-            adminCommands.push(cmdJson);
-            console.log(`    ✅ Loaded (ADMIN): ${command.default.data.name}`);
-          } else {
-            commands.push(cmdJson);
-            console.log(`    ✅ Loaded: ${command.default.data.name}`);
-          }
-        } else {
-          console.warn(`    ⚠️ Invalid command structure: ${file}`);
+          commands.push(command.default.data.toJSON());
+          console.log(`    ✅ ${command.default.data.name}`);
         }
       } catch (error) {
         console.error(`    ❌ Error loading ${file}:`, error.message);
@@ -114,62 +82,47 @@ const loadCommands = async () => {
     }
   }
 
-  console.log(`\n📤 Registering ${commands.length + adminCommands.length} total commands...`);
+  console.log(`\n📤 Registering ${commands.length} commands...`);
 
-  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+  const rest = new REST({ version: '10' }).setToken(token);
+  const guilds = Array.from(client.guilds.cache.values());
 
-  // Combine all commands
-  const allCommands = [...commands, ...adminCommands];
+  console.log(`📊 Bot is in ${guilds.length} guild(s)\n`);
 
-  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
-
-  // Register to all guilds the bot is in
-  for (const [guildId, guild] of client.guilds.cache) {
+  for (const guild of guilds) {
     try {
-      console.log(`📍 Registering ${allCommands.length} commands to: ${guild.name}`);
-      const result = await rest.put(Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId), {
-        body: allCommands,
+      console.log(`📍 Registering to: ${guild.name}`);
+      const result = await rest.put(Routes.applicationGuildCommands(clientId, guild.id), {
+        body: commands,
       });
-      console.log(`✅ Registered ${result.length} commands to ${guild.name}`);
+      console.log(`✅ Registered ${result.length} commands\n`);
     } catch (err) {
-      console.error(`❌ Failed to register to ${guild.name}:`, err.message);
+      console.error(`❌ Failed: ${err.message}\n`);
     }
   }
 };
 
 client.once('clientReady', async () => {
-  console.log(`✅ Logged in as ${client.user.tag}!`);
-  console.log(`🤖 Bot is now online and ready!`);
-  console.log(`📊 Bot is in ${client.guilds.cache.size} guild(s)`);
+  console.log(`\n✅ Logged in as ${client.user.tag}`);
+  console.log(`🤖 Bot is online and ready`);
   
-  // Log guild IDs
-  client.guilds.cache.forEach(guild => {
-    console.log(`  - ${guild.name} (ID: ${guild.id})`);
-  });
-  
-  // Set custom status
   try {
     await client.user.setPresence({
-      activities: [{
-        name: 'Well Developed by KVA',
-        type: 0 // PLAYING
-      }],
+      activities: [{ name: 'Well Developed by KVA', type: 0 }],
       status: 'online'
     });
-    console.log('✅ Bot status set to: Well Developed by KVA');
+    console.log('✅ Status updated\n');
   } catch (error) {
-    console.error('❌ Failed to set bot status:', error);
+    console.error('❌ Failed to set status:', error.message);
   }
   
-  console.log('📝 Loading commands...');
   await loadCommands();
-  console.log('✅ Commands loaded successfully!');
+  console.log('✅ All commands loaded!\n');
 });
 
 client.on('interactionCreate', async interaction => {
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
-
     if (!command) return;
 
     try {
@@ -189,7 +142,6 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
-  // Handle select menu interactions
   if (interaction.isStringSelectMenu()) {
     if (interaction.customId === 'help_category') {
       const category = interaction.values[0];
@@ -293,15 +245,12 @@ client.on('interactionCreate', async interaction => {
     }
   }
 
-  // Handle button interactions
   if (interaction.isButton()) {
-    // Create Ticket Button
     if (interaction.customId.startsWith('create_ticket')) {
       try {
         const user = interaction.user;
-        const categoryId = interaction.customId.split('_')[2]; // Extract category ID from button ID
+        const categoryId = interaction.customId.split('_')[2];
         
-        // Check if user already has an open ticket
         const existingTicket = interaction.guild.channels.cache.find(
           channel => channel.name === `ticket-${user.id}` && channel.type === 0
         );
@@ -315,13 +264,11 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.deferReply({ ephemeral: true });
 
-        // Generate ticket number
         const ticketNumber = Math.floor(Math.random() * 10000);
 
-        // Create ticket channel
         const ticketChannel = await interaction.guild.channels.create({
           name: `ticket-${user.id}`,
-          type: 0, // Text channel
+          type: 0,
           parent: categoryId,
           topic: `Ticket #${ticketNumber} - Created by ${user.tag}`,
           permissionOverwrites: [
@@ -340,7 +287,6 @@ client.on('interactionCreate', async interaction => {
           ],
         });
 
-        // Create ticket embed
         const ticketEmbed = new EmbedBuilder()
           .setColor('#4CAF50')
           .setTitle(`🎫 Ticket #${ticketNumber}`)
@@ -352,7 +298,6 @@ client.on('interactionCreate', async interaction => {
           .setThumbnail(user.displayAvatarURL())
           .setTimestamp();
 
-        // Create ticket control buttons
         const ticketButtons = new ActionRowBuilder()
           .addComponents(
             new ButtonBuilder()
@@ -383,12 +328,10 @@ client.on('interactionCreate', async interaction => {
       }
     }
 
-    // Close Ticket Button
     if (interaction.customId === 'close_ticket') {
       try {
         const channel = interaction.channel;
 
-        // Check if this is a ticket channel
         if (!channel.name.startsWith('ticket-') && !channel.name.startsWith('claimed-ticket-')) {
           return await interaction.reply({ 
             content: '❌ This button can only be used in ticket channels!', 
@@ -396,7 +339,6 @@ client.on('interactionCreate', async interaction => {
           });
         }
 
-        // Check permissions (ticket owner or staff)
         const userId = interaction.user.id;
         const isTicketOwner = channel.name === `ticket-${userId}` || channel.name === `claimed-ticket-${userId}`;
         const hasManageChannels = interaction.member.permissions.has(PermissionFlagsBits.ManageChannels);
@@ -422,7 +364,6 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.editReply({ embeds: [embed] });
 
-        // Delete channel after 10 seconds
         setTimeout(async () => {
           try {
             await channel.delete();
@@ -440,10 +381,8 @@ client.on('interactionCreate', async interaction => {
       }
     }
 
-    // Claim Ticket Button
     if (interaction.customId === 'claim_ticket') {
       try {
-        // Check if user has manage channels permission (staff only)
         if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
           return await interaction.reply({
             content: '❌ Only staff members can claim tickets!',
@@ -453,7 +392,6 @@ client.on('interactionCreate', async interaction => {
 
         const channel = interaction.channel;
 
-        // Check if this is a ticket channel
         if (!channel.name.startsWith('ticket-') && !channel.name.startsWith('claimed-ticket-')) {
           return await interaction.reply({ 
             content: '❌ This button can only be used in ticket channels!', 
@@ -473,7 +411,6 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.reply({ embeds: [claimEmbed] });
 
-        // Update channel name to show it's claimed
         await channel.setName(`claimed-${channel.name}`);
 
       } catch (error) {
@@ -523,4 +460,4 @@ client.on('messageCreate', async message => {
   });
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(token);
