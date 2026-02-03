@@ -1,0 +1,53 @@
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
+import { supabase } from '../../index.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('levelsetup')
+    .setDescription('Set up the leveling system for your server')
+    .addChannelOption(option =>
+      option
+        .setName('channel')
+        .setDescription('Channel for level-up announcements')
+        .setRequired(true)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
+  async execute(interaction) {
+    const channel = interaction.options.getChannel('channel');
+    const guildId = interaction.guildId;
+
+    try {
+      // Save or update the leveling channel
+      const { error } = await supabase
+        .from('guild_settings')
+        .upsert({
+          guild_id: guildId,
+          leveling_channel_id: channel.id,
+          updated_at: new Date(),
+        }, {
+          onConflict: 'guild_id'
+        });
+
+      if (error) throw error;
+
+      const embed = new EmbedBuilder()
+        .setColor('#00CED1')
+        .setTitle('✅ Leveling System Configured')
+        .setDescription(`Level-up announcements will be sent to ${channel}`)
+        .addFields(
+          { name: 'Channel', value: channel.toString(), inline: true },
+          { name: 'Guild', value: interaction.guild.name, inline: true }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      console.error('Leveling setup error:', error);
+      await interaction.reply({
+        content: '❌ Failed to set up leveling system',
+        ephemeral: true
+      });
+    }
+  },
+};
