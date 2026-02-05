@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   // Discord OAuth URLs
   const DISCORD_CLIENT_ID = '1468377499468824688';
-  const REDIRECT_URI = encodeURIComponent('https://kvshokwav-gg.vercel.app/');
+  const REDIRECT_URI = encodeURIComponent('https://kvshokwavgg-kvas-projects-4b894f24.vercel.app/');
   const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify%20guilds`;
 
   // Real Discord OAuth login
