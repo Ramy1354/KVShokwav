@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   // Discord OAuth URLs
   const DISCORD_CLIENT_ID = '1465779916518723796';
-  const REDIRECT_URI = encodeURIComponent('https://kvshokwav.netlify.app/auth/callback');
+  const REDIRECT_URI = encodeURIComponent('https://kvshokwav.gg/api/auth-callback');
   const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify%20guilds`;
 
   // Real Discord OAuth login
